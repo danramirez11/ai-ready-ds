@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Selection Inspector</title>
+    <title>AI-Ready Extraction</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -13,60 +13,57 @@
         font: 12px/1.4 Inter, system-ui, sans-serif;
       }
 
-      .toolbar {
-        display: flex;
+      h2 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        opacity: 0.9;
+      }
+
+      .buttons {
+        display: grid;
         gap: 8px;
-        margin-bottom: 10px;
       }
 
       button {
         border: 1px solid #d1d5db;
         border-radius: 6px;
         background: transparent;
-        padding: 6px 10px;
+        padding: 8px 10px;
         cursor: pointer;
+        text-align: left;
         font: inherit;
-      }
-
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-        word-break: break-word;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        padding: 10px;
-        height: 320px;
-        overflow: auto;
       }
     </style>
   </head>
   <body>
-    <div class="toolbar">
-      <button id="refresh" type="button">Refresh</button>
-      <button id="close" type="button">Close</button>
+    <h2>Create AI-Ready Page</h2>
+    <p>Choose how variants should be exported from your current selection.</p>
+
+    <div class="buttons">
+      <button id="full" type="button">Full variants (separate each variant)</button>
+      <button id="compact" type="button">Compact sets (one component set node)</button>
+      <button id="close" type="button">Cancel</button>
     </div>
-    <pre id="output">Waiting for selection data...</pre>
 
     <script>
-      const output = document.getElementById('output');
-      const refreshBtn = document.getElementById('refresh');
+      const fullBtn = document.getElementById('full');
+      const compactBtn = document.getElementById('compact');
       const closeBtn = document.getElementById('close');
 
-      refreshBtn.onclick = () => {
-        parent.postMessage({ pluginMessage: { type: 'refresh-selection' } }, '*');
+      fullBtn.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'run-extraction', mode: 'full' } }, '*');
+      };
+
+      compactBtn.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'run-extraction', mode: 'compact' } }, '*');
       };
 
       closeBtn.onclick = () => {
         parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
-      };
-
-      window.onmessage = (event) => {
-        const message = event.data.pluginMessage;
-        if (!message || message.type !== 'selection-data') {
-          return;
-        }
-
-        output.textContent = JSON.stringify(message.payload, null, 2);
       };
     </script>
   </body>
