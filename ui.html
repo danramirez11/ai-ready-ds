@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Selection Inspector</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 12px;
+        font: 12px/1.4 Inter, system-ui, sans-serif;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      button {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: transparent;
+        padding: 6px 10px;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 10px;
+        height: 320px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button id="refresh" type="button">Refresh</button>
+      <button id="close" type="button">Close</button>
+    </div>
+    <pre id="output">Waiting for selection data...</pre>
+
+    <script>
+      const output = document.getElementById('output');
+      const refreshBtn = document.getElementById('refresh');
+      const closeBtn = document.getElementById('close');
+
+      refreshBtn.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'refresh-selection' } }, '*');
+      };
+
+      closeBtn.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+      };
+
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (!message || message.type !== 'selection-data') {
+          return;
+        }
+
+        output.textContent = JSON.stringify(message.payload, null, 2);
+      };
+    </script>
+  </body>
+</html>
