@@ -1,10 +1,11 @@
-figma.showUI(__html__, { width: 380, height: 220 });
 
-type ExtractionMode = 'full' | 'compact';
 type KeepNode = ComponentNode | ComponentSetNode | InstanceNode;
 
+
 const GRID_GAP = 120;
+
 const MAX_ROW_WIDTH = 4800;
+
 
 function isKeepNode(node: SceneNode): node is KeepNode {
   return (
@@ -14,9 +15,11 @@ function isKeepNode(node: SceneNode): node is KeepNode {
   );
 }
 
+
 function hasChildren(node: SceneNode): node is SceneNode & ChildrenMixin {
   return 'children' in node;
 }
+
 
 function collectKeepNodes(node: SceneNode, collected: Map<string, KeepNode>): void {
   if (isKeepNode(node)) {
@@ -32,6 +35,7 @@ function collectKeepNodes(node: SceneNode, collected: Map<string, KeepNode>): vo
   }
 }
 
+
 function filterNestedVariantComponents(nodes: KeepNode[]): KeepNode[] {
   const setIds = new Set(nodes.filter((node) => node.type === 'COMPONENT_SET').map((node) => node.id));
 
@@ -44,36 +48,9 @@ function filterNestedVariantComponents(nodes: KeepNode[]): KeepNode[] {
   });
 }
 
-function expandAllVariants(nodes: KeepNode[]): KeepNode[] {
-  const setIds = new Set(nodes.filter((node) => node.type === 'COMPONENT_SET').map((node) => node.id));
-  const expanded = new Map<string, KeepNode>();
 
-  for (const node of nodes) {
-    if (node.type === 'COMPONENT_SET') {
-      for (const variant of node.children) {
-        if (variant.type === 'COMPONENT') {
-          expanded.set(variant.id, variant);
-        }
-      }
-      continue;
-    }
-
-    if (node.type === 'COMPONENT') {
-      if (node.parent?.type === 'COMPONENT_SET' && setIds.has(node.parent.id)) {
-        continue;
-      }
-      expanded.set(node.id, node);
-      continue;
-    }
-
-    expanded.set(node.id, node);
-  }
-
-  return Array.from(expanded.values());
-}
-
-function getNodesForMode(nodes: KeepNode[], mode: ExtractionMode): KeepNode[] {
-  const modeNodes = mode === 'full' ? expandAllVariants(nodes) : filterNestedVariantComponents(nodes);
+function getCompactNodes(nodes: KeepNode[]): KeepNode[] {
+  const modeNodes = filterNestedVariantComponents(nodes);
 
   return modeNodes.sort((a, b) => {
     if (a.type === b.type) {
@@ -97,7 +74,8 @@ function getNodeSize(node: KeepNode): { width: number; height: number } {
   return { width: node.width, height: node.height };
 }
 
-async function runExtraction(mode: ExtractionMode) {
+
+async function runExtraction() {
   const selection = figma.currentPage.selection;
 
   if (selection.length === 0) {
@@ -111,7 +89,7 @@ async function runExtraction(mode: ExtractionMode) {
     collectKeepNodes(selectedNode, collected);
   }
 
-  const filtered = getNodesForMode(Array.from(collected.values()), mode);
+  const filtered = getCompactNodes(Array.from(collected.values()));
 
   if (filtered.length === 0) {
     figma.closePlugin('No components, component sets, or instances were found in the selection.');
@@ -150,21 +128,10 @@ async function runExtraction(mode: ExtractionMode) {
   figma.currentPage.selection = clonedNodes;
   figma.viewport.scrollAndZoomIntoView(clonedNodes);
 
-  const modeLabel = mode === 'full' ? 'full variants' : 'compact sets';
-  figma.closePlugin(`Created ${targetPage.name} with ${clonedNodes.length} nodes (${modeLabel}).`);
+  figma.closePlugin(`Created ${targetPage.name} with ${clonedNodes.length} nodes (compact sets).`);
 }
 
-figma.ui.onmessage = (msg: { type?: string; mode?: ExtractionMode }) => {
-  if (msg.type === 'close') {
-    figma.closePlugin();
-    return;
-  }
-
-  if (msg.type === 'run-extraction') {
-    const mode: ExtractionMode = msg.mode === 'full' ? 'full' : 'compact';
-    runExtraction(mode).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
-      figma.closePlugin(`Extraction failed: ${message}`);
-    });
-  }
-};
+runExtraction().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  figma.closePlugin(`Extraction failed: ${message}`);
+});
